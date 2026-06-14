@@ -138,29 +138,6 @@ real-money onboarding, and KYC are roadmap items, not claims of this MVP.
 - [Seven-slide pitch deck](docs/pitch/riskmesh-agent-risk-exchange.pptx)
 - [Two-minute demo script](docs/demo-script.md)
 
-## Submission email
-
-Before the deadline, verify the repository is public and that the latest commit
-is visible at <https://github.com/ChrysisAndreou/riskmesh>. Then email:
-
-- **To:** `ifxhack@cocooncreations.net`
-- **Subject:** `iFX Hack 2026 Submission - RiskMesh`
-- **Body:**
-
-```text
-Hello iFX Hack team,
-
-Please find my AI & Intelligent Trading track submission:
-
-RiskMesh - the agent-to-agent exchange for machine-native micro-risk
-Public GitHub repository: https://github.com/ChrysisAndreou/riskmesh
-
-Builder: Chrysis Andreou
-
-Regards,
-Chrysis
-```
-
 ## License
 
 MIT
