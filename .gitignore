@@ -14,3 +14,4 @@ build/
 *.egg-info/
 outputs/
 docs/pitch/artifact-build-manifest.json
+docs/PRESENTATION-GUIDE.md
