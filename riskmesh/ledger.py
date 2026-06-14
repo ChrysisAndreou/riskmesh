@@ -75,7 +75,9 @@ class Ledger:
     ) -> Account:
         if agent_id in self.accounts:
             raise LedgerError(f"Account already exists: {agent_id}")
-        balance = self._amount(opening_balance)
+        balance = Decimal(str(opening_balance))
+        if balance < ZERO:
+            raise LedgerError("Opening balance cannot be negative")
         account = Account(agent_id, display_name, role, balance, balance)
         self.accounts[agent_id] = account
         return account

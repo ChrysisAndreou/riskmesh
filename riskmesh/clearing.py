@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from decimal import Decimal
+from decimal import ROUND_HALF_UP, Decimal
 
 from riskmesh.contracts import BinaryContract, ContractError, ContractStatus
 from riskmesh.forecasters import BeliefQuote
@@ -25,13 +25,26 @@ class MatchResult:
     risk_taker_id: str
     fair_probability: Decimal
     premium: Decimal
+    venue_fee: Decimal
     collateral_locked: Decimal
     tick: int
 
 
 class ClearingEngine:
-    def __init__(self, ledger: Ledger) -> None:
+    def __init__(
+        self,
+        ledger: Ledger,
+        *,
+        venue_account_id: str | None = None,
+        fee_rate: Decimal | str | float = Decimal("0.02"),
+    ) -> None:
         self.ledger = ledger
+        self.venue_account_id = venue_account_id
+        self.fee_rate = Decimal(str(fee_rate))
+        if self.fee_rate < 0 or self.fee_rate >= 1:
+            raise ValueError("Fee rate must be between zero and one")
+        if self.venue_account_id is not None:
+            self.ledger.account(self.venue_account_id)
         self.collateral: dict[str, CollateralPosition] = {}
 
     def match(
@@ -62,24 +75,40 @@ class ClearingEngine:
                 f"{risk_taker_id} cannot fully collateralize {contract.max_payout}"
             )
 
+        venue_fee = Decimal("0")
+        if self.venue_account_id is not None:
+            venue_fee = (quote.fair_premium * self.fee_rate).quantize(
+                Decimal("0.01"), ROUND_HALF_UP
+            )
+        taker_premium = quote.fair_premium - venue_fee
+
         self.ledger.lock(
             risk_taker_id,
             contract.max_payout,
             note=f"{contract.contract_id} maximum payout collateral",
             tick=tick,
         )
-        self.ledger.transfer(
-            contract.hedger_id,
-            risk_taker_id,
-            quote.fair_premium,
-            note=f"{contract.contract_id} fair premium",
-            tick=tick,
-        )
+        if taker_premium > 0:
+            self.ledger.transfer(
+                contract.hedger_id,
+                risk_taker_id,
+                taker_premium,
+                note=f"{contract.contract_id} net risk premium",
+                tick=tick,
+            )
+        if venue_fee > 0 and self.venue_account_id is not None:
+            self.ledger.transfer(
+                contract.hedger_id,
+                self.venue_account_id,
+                venue_fee,
+                note=f"{contract.contract_id} venue fee",
+                tick=tick,
+            )
         contract.mark_matched(
             risk_taker_id=risk_taker_id,
             fair_probability=quote.probability,
             premium=quote.fair_premium,
-            venue_fee=Decimal("0"),
+            venue_fee=venue_fee,
         )
         self.collateral[contract.contract_id] = CollateralPosition(
             contract_id=contract.contract_id,
@@ -93,6 +122,7 @@ class ClearingEngine:
             risk_taker_id=risk_taker_id,
             fair_probability=quote.probability,
             premium=quote.fair_premium,
+            venue_fee=venue_fee,
             collateral_locked=contract.max_payout,
             tick=tick,
         )

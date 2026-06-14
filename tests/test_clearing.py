@@ -69,3 +69,17 @@ def test_match_fails_atomically_when_taker_cannot_fully_collateralize() -> None:
         for agent_id, account in ledger.accounts.items()
     }
     assert ledger.transactions == []
+
+
+def test_match_accrues_fee_without_changing_fair_price() -> None:
+    ledger, contract, quote = setup_market()
+    ledger.create_account("venue", "RiskMesh", AccountRole.VENUE, "0")
+
+    result = ClearingEngine(
+        ledger, venue_account_id="venue", fee_rate=Decimal("0.02")
+    ).match(contract, risk_taker_id="taker", quote=quote, tick=1)
+
+    assert result.premium == Decimal("10.00")
+    assert result.venue_fee == Decimal("0.20")
+    assert ledger.account("venue").available == Decimal("0.20")
+    assert ledger.account("taker").available == Decimal("84.80")
