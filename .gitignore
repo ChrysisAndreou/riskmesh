@@ -8,6 +8,7 @@ __pycache__/
 .venv/
 venv/
 .streamlit/secrets.toml
+prompt.md
 dist/
 build/
 *.egg-info/
