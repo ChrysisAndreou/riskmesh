@@ -12,3 +12,5 @@ prompt.md
 dist/
 build/
 *.egg-info/
+outputs/
+docs/pitch/artifact-build-manifest.json
